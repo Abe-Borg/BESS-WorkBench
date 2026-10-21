@@ -262,19 +262,23 @@ class MainWindow(QMainWindow):
         if not path.is_file():
             QMessageBox.warning(self, "Sample", f"Sample file was not found at {path}")
             return
-        self.load_path(path)
+        # Unsaved copy: autosave must not write to the bundled file (a temp extraction in the one-file build).
+        self.load_path(path, as_copy=True)
 
-    def load_path(self, path: Path) -> None:
+    def load_path(self, path: Path, as_copy: bool = False) -> None:
         try:
             project = load_project(path)
         except Exception as exc:
             QMessageBox.warning(self, "Open project", scrub(str(exc)))
             return
         self.controller = ProjectController(project, self.controller.rules)
-        self.path = path
-        self._remember(path)
+        if as_copy:
+            self.path = None
+        else:
+            self.path = path
+            self._remember(path)
         self.refresh_all()
-        self.status(f"Opened {path.name}")
+        self.status(f"Opened {path.name} as an unsaved copy. Use Save As to keep changes." if as_copy else f"Opened {path.name}")
 
     def save(self) -> None:
         if self.path is None:
@@ -362,9 +366,7 @@ def run(args=None) -> int:
     app.setStyle("Fusion")
     window = MainWindow(autosave=True)
     if args is not None and getattr(args, "sample", False):
-        path = sample_file()
-        if path.is_file():
-            window.load_path(path)
+        window.open_sample()
     elif args is not None and getattr(args, "project", None):
         window.load_path(Path(args.project))
     window.show()

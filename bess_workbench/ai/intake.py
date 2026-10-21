@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from bess_workbench.models import ESSGroup, Project, Provenance, ReleaseSpecies, Sensor
+from bess_workbench.models import ESSGroup, Project, Provenance, ReleaseSpecies, Sensor, unused_id
 
 
 class ExtractedGas(BaseModel):
@@ -207,7 +207,7 @@ def apply_accepted(
             sensor = extraction.sensors[int(key.split(":")[1])]
             room_id = _match_room(updated, sensor.room_hint)
             mount = "low" if sensor.mount.strip().lower() == "low" else "high"
-            new_id = f"{room_id}-{sensor.gas}-{len(updated.gas.sensors) + 1}"
+            new_id, _number = unused_id(f"{room_id}-{sensor.gas}", [item.id for item in updated.gas.sensors])
             updated.gas.sensors.append(
                 Sensor(id=new_id, room_id=room_id, gas=sensor.gas, mount=mount, justification=sensor.height_note, height_justified=bool(sensor.height_note))
             )

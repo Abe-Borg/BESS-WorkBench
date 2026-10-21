@@ -7,7 +7,7 @@ from bess_workbench.analysis import Status
 from bess_workbench.calcs import duct_sprinkler, mass_balance, sprinkler_rows
 from bess_workbench.controller import ProjectController, load_project
 from bess_workbench.engine import analyze
-from bess_workbench.models import ESSGroup, FireArea, Project, ReleaseSpecies, Room
+from bess_workbench.models import ESSGroup, FireArea, Project, ReleaseSpecies, Room, unused_id
 from bess_workbench.paths import sample_file
 from bess_workbench.ruleset import load_rules
 from bess_workbench.sample_data import build_new_project, build_sample_project
@@ -302,3 +302,21 @@ def test_new_project_opens(rules):
     assert controller.analysis.check("SCOPE-US").status == Status.PASS
     assert controller.project.gas.controller.relay_functions["R1"] == "exhaust_makeup_latched"
     assert controller.project.gas.controller.relay_functions["FAULT"] == "trouble_to_facp"
+
+
+def test_relay_map_checks_assigned_outputs(rules):
+    project = build_sample_project(rules)
+    assert analyze(project, rules).check("FA-RELAYS").status == Status.PASS
+    functions = project.gas.controller.relay_functions
+    functions["R1"], functions["R3"] = functions["R3"], functions["R1"]
+    check = analyze(project, rules).check("FA-RELAYS")
+    assert check.status == Status.FAIL
+    assert "R1 exhaust and makeup" in check.message
+    assert "R3 gas horns and strobes" in check.message
+    assert "R2" not in check.message
+
+
+def test_unused_id_skips_ids_left_after_a_delete():
+    assert unused_id("ROOM", []) == ("ROOM-1", 1)
+    assert unused_id("ROOM", ["UPS-1", "UPS-2"]) == ("ROOM-3", 3)
+    assert unused_id("ROOM", ["ROOM-1", "ROOM-3"]) == ("ROOM-4", 4)

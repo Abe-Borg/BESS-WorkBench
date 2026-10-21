@@ -23,6 +23,8 @@ That works on Linux and on Windows. Open the synthetic sample from **File → Op
 python -m bess_workbench --sample
 ```
 
+The sample opens as an unsaved copy, so edits never write back to the bundled file. Autosave goes to the recovery copy until you use **File → Save As**.
+
 Headless export (no window):
 
 ```bash

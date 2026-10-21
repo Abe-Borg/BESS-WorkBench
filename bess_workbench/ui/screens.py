@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
 
 from bess_workbench.calcs import CE_COLUMNS, RELAY_FUNCTIONS
 from bess_workbench.formatting import fmt_fixed, fmt_num
-from bess_workbench.models import ESSGroup, FireArea, RFI, ReleaseSpecies, Room, Sensor, display_rfi_id
+from bess_workbench.models import ESSGroup, FireArea, RFI, ReleaseSpecies, Room, Sensor, display_rfi_id, unused_id
 from bess_workbench.reports import export_all, write_cause_effect
 from bess_workbench.ui.dialogs import ConfirmDialog
 from bess_workbench.ui.widgets import Screen, fill_table, ispin, muted, spin
@@ -265,8 +265,7 @@ class RoomsScreen(Screen):
 
     def _add_room(self) -> None:
         project = self.project()
-        number = len(project.rooms) + 1
-        room_id = f"ROOM-{number}"
+        room_id, number = unused_id("ROOM", [room.id for room in project.rooms])
         project.rooms.append(Room(id=room_id, name=f"BESS Room {number}", area_sf=400, height_ft=12, fire_area_id="FA-1"))
         project.gas.sensors.extend(
             [
@@ -292,8 +291,8 @@ class RoomsScreen(Screen):
     def _add_ess(self) -> None:
         project = self.project()
         room_id = project.rooms[0].id if project.rooms else "ROOM-1"
-        number = len(project.ess_groups) + 1
-        project.ess_groups.append(ESSGroup(id=f"ESS-{number}", name=f"ESS-{number}", room_id=room_id))
+        group_id, _number = unused_id("ESS", [group.id for group in project.ess_groups])
+        project.ess_groups.append(ESSGroup(id=group_id, name=group_id, room_id=room_id))
         self.touch()
         self.load()
 
@@ -742,8 +741,8 @@ class GasScreen(Screen):
     def _add_sensor(self) -> None:
         project = self.project()
         room_id = project.rooms[0].id if project.rooms else "ROOM-1"
-        number = len(project.gas.sensors) + 1
-        project.gas.sensors.append(Sensor(id=f"S-{number}", room_id=room_id, gas="H2", mount="high", inches_from_ceiling=6))
+        sensor_id, _number = unused_id("S", [sensor.id for sensor in project.gas.sensors])
+        project.gas.sensors.append(Sensor(id=sensor_id, room_id=room_id, gas="H2", mount="high", inches_from_ceiling=6))
         self.touch()
         self.load()
 
