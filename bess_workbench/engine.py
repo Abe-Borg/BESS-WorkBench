@@ -897,18 +897,18 @@ def _gas_checks(project: Project, rules: Ruleset) -> list[CheckResult]:
 
     functions = project.gas.controller.relay_functions
     needed = {
-        "exhaust_makeup_latched": "R1 exhaust and makeup, latched, manual reset",
-        "gas_alarm_to_facp": "R2 gas alarm to the FACP",
-        "gas_horns_strobes": "R3 gas horns and strobes",
+        "R1": ("exhaust_makeup_latched", "R1 exhaust and makeup, latched, manual reset"),
+        "R2": ("gas_alarm_to_facp", "R2 gas alarm to the FACP"),
+        "R3": ("gas_horns_strobes", "R3 gas horns and strobes"),
     }
-    missing_fn = [label for key, label in needed.items() if key not in functions.values()]
+    missing_fn = [label for relay, (function, label) in needed.items() if functions.get(relay) != function]
     fault_ok = project.gas.controller.has_fault_relay and functions.get("FAULT") == "trouble_to_facp"
     if project.gas.controller.programmable_relays < 3:
         missing_fn.append("fewer than three programmable relays")
     if not fault_ok:
         missing_fn.append("fault relay as trouble to the FACP")
     if missing_fn:
-        checks.append(_check(rules, "FA-RELAYS", Status.FAIL, "Relay map is incomplete: " + "; ".join(missing_fn) + ".", "incomplete"))
+        checks.append(_check(rules, "FA-RELAYS", Status.FAIL, "Relay map is incomplete or misassigned: " + "; ".join(missing_fn) + ".", "incomplete"))
     else:
         described = ", ".join(f"{key}={RELAY_FUNCTIONS.get(value, value)}" for key, value in functions.items())
         checks.append(_check(rules, "FA-RELAYS", Status.PASS, f"Relay map covers R1, R2, R3, and the fault relay. {described}.", "R1/R2/R3/fault"))

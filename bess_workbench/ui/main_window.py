@@ -271,10 +271,17 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Open project", scrub(str(exc)))
             return
         self.controller = ProjectController(project, self.controller.rules)
-        self.path = path
-        self._remember(path)
+        # The bundled sample opens as an unsaved copy from any route (menu, Recent, Open, command line), so autosave
+        # never writes to it (in the one-file build it is a temp extraction).
+        as_copy = _is_bundled_sample(path)
+        if as_copy:
+            self.path = None
+            self._forget(path)
+        else:
+            self.path = path
+            self._remember(path)
         self.refresh_all()
-        self.status(f"Opened {path.name}")
+        self.status(f"Opened {path.name} as an unsaved copy. Use Save As to keep changes." if as_copy else f"Opened {path.name}")
 
     def save(self) -> None:
         if self.path is None:
@@ -324,6 +331,11 @@ class MainWindow(QMainWindow):
         self.settings.setValue("recent", recent[:8])
         self._rebuild_recent()
 
+    def _forget(self, path: Path) -> None:
+        recent = [item for item in list(self.settings.value("recent", []) or []) if item != str(path)]
+        self.settings.setValue("recent", recent)
+        self._rebuild_recent()
+
     def _rebuild_recent(self) -> None:
         self.recent_menu.clear()
         recent = list(self.settings.value("recent", []) or [])
@@ -355,6 +367,13 @@ class MainWindow(QMainWindow):
         event.accept()
 
 
+def _is_bundled_sample(path: Path) -> bool:
+    try:
+        return path.samefile(sample_file())
+    except OSError:
+        return False
+
+
 def run(args=None) -> int:
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("BESS WorkBench")
@@ -362,9 +381,7 @@ def run(args=None) -> int:
     app.setStyle("Fusion")
     window = MainWindow(autosave=True)
     if args is not None and getattr(args, "sample", False):
-        path = sample_file()
-        if path.is_file():
-            window.load_path(path)
+        window.open_sample()
     elif args is not None and getattr(args, "project", None):
         window.load_path(Path(args.project))
     window.show()

@@ -240,5 +240,14 @@ def is_li_ion(chemistry: str) -> bool:
     return "lithium" in text
 
 
+def unused_id(prefix: str, taken: list[str]) -> tuple[str, int]:
+    """PREFIX-n from len(taken) + 1 upward, skipping IDs still in use after a delete."""
+    used = set(taken)
+    number = len(taken) + 1
+    while f"{prefix}-{number}" in used:
+        number += 1
+    return f"{prefix}-{number}", number
+
+
 def display_rfi_id(item: RFI) -> str:
     return f"RFI-{item.number:03d}"
