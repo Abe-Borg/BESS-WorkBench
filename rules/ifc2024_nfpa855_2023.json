@@ -1,0 +1,832 @@
+{
+  "ruleset_id": "ifc2024_nfpa855_2023",
+  "version": "1.0.0",
+  "title": "US lithium-ion BESS room ruleset (IFC 2024 / NFPA 855-2023)",
+  "changelog": [
+    "1.0.0 — Initial encoding of the 2026-10-21 fire protection and fire alarm lead inputs."
+  ],
+  "editions": {
+    "ifc": "2024",
+    "ibc": "2024",
+    "imc": "2024",
+    "nec": "2023",
+    "nfpa_855": "2023",
+    "nfpa_72": "2022",
+    "nfpa_13": "2025",
+    "nfpa_69": "2024"
+  },
+  "scope": {
+    "region": "US",
+    "sprinkler_systems_allowed": ["wet", "dry", "double_interlock_preaction"],
+    "sprinkler_systems_prohibited": ["clean_agent", "foam", "water_mist", "single_interlock_preaction"],
+    "summary": "US lithium-ion BESS rooms only. Sprinklers are wet, dry, or double-interlock preaction."
+  },
+  "parameters": {
+    "li_ion_threshold_kwh": {
+      "value": 20,
+      "unit": "kWh",
+      "citation": "IFC 2024 Table 1207.1.1",
+      "edition": "IFC 2024",
+      "summary": "Lithium-ion energy at or above this value per room brings the ESS room rules into effect.",
+      "tags": ["CODE"]
+    },
+    "max_kwh_fire_area": {
+      "value": 600,
+      "unit": "kWh",
+      "citation": "IFC 2024 Table 1207.5",
+      "edition": "IFC 2024",
+      "summary": "Aggregate lithium-ion energy allowed in one fire area. The FP lead marked this table value unconfirmed.",
+      "tags": ["ASSUMED"]
+    },
+    "fire_area_warn_band": {
+      "value": 0.05,
+      "unit": "fraction",
+      "citation": "FP lead 2026-10-21",
+      "edition": "FP lead 2026-10-21",
+      "summary": "Warn when a fire area is within this fraction of the energy cap, including a value sitting on the cap.",
+      "tags": ["ASSUMED"]
+    },
+    "min_room_hr": {
+      "value": 2,
+      "unit": "h",
+      "citation": "IFC 2024 1207.7.4",
+      "edition": "IFC 2024",
+      "summary": "Minimum fire-resistance of an in-scope BESS room enclosure.",
+      "tags": ["CODE"]
+    },
+    "separate_barrier_hr": {
+      "value": 3,
+      "unit": "h",
+      "citation": "IBC 2024 Table 707.3.10",
+      "edition": "IBC 2024",
+      "summary": "Barrier rating treated as required to make a separate fire area. F-1 occupancy is assumed and editable.",
+      "tags": ["ASSUMED"]
+    },
+    "separate_horizontal_hr": {
+      "value": 3,
+      "unit": "h",
+      "citation": "IBC 2024 711.2.4.2",
+      "edition": "IBC 2024",
+      "summary": "Floor and ceiling rating treated as required before two rooms count as separate fire areas.",
+      "tags": ["ASSUMED"]
+    },
+    "sprinkler_density_gpm_sf": {
+      "value": 0.3,
+      "unit": "gpm/sf",
+      "citation": "IFC 2024 1207.5.5",
+      "edition": "IFC 2024",
+      "summary": "Baseline sprinkler density. A lower density is accepted only when a UL 9540A report is on file.",
+      "tags": ["CODE"]
+    },
+    "sprinkler_area_cap_sf": {
+      "value": 2500,
+      "unit": "sf",
+      "citation": "IFC 2024 1207.5.5",
+      "edition": "IFC 2024",
+      "summary": "Design area is the room area but not more than this cap, before any dry or preaction increase.",
+      "tags": ["CODE"]
+    },
+    "dry_di_area_factor": {
+      "value": 1.3,
+      "unit": "multiplier",
+      "citation": "NFPA 13-2025 19.2.3.2.5",
+      "edition": "NFPA 13-2025",
+      "summary": "Dry and double-interlock preaction design area increase. The FP lead marked the subsection unconfirmed.",
+      "tags": ["ASSUMED"]
+    },
+    "hose_allowance_gpm": {
+      "value": 100,
+      "unit": "gpm",
+      "citation": "FP lead 2026-10-21",
+      "edition": "FP lead 2026-10-21",
+      "summary": "Default hose allowance. Assumed and editable on the project.",
+      "tags": ["ASSUMED"]
+    },
+    "hose_duration_min": {
+      "value": 60,
+      "unit": "min",
+      "citation": "FP lead 2026-10-21",
+      "edition": "FP lead 2026-10-21",
+      "summary": "Default hose duration used for the worksheet water volume. Assumed and editable.",
+      "tags": ["ASSUMED"]
+    },
+    "hazen_williams_c": {
+      "value": 100,
+      "unit": "C",
+      "citation": "FP lead 2026-10-21",
+      "edition": "NFPA 13-2025",
+      "summary": "Hazen-Williams C recorded for the design basis. This workbook does not run a pipe model.",
+      "tags": ["ASSUMED"]
+    },
+    "duct_min_psi": {
+      "value": 7,
+      "unit": "psi",
+      "citation": "NFPA 13-2025 minimum sprinkler pressure",
+      "edition": "NFPA 13-2025",
+      "summary": "Minimum pressure used for the duct sprinkler flow worksheet.",
+      "tags": ["ASSUMED"]
+    },
+    "sprinkler_block_kwh": {
+      "value": 50,
+      "unit": "kWh",
+      "citation": "BESS WorkBench scope rule",
+      "edition": "WorkBench",
+      "summary": "Sprinkler sign-off is blocked when a group above this size has no UL 9540A report on file.",
+      "tags": ["ASSUMED"]
+    },
+    "alarm_lfl_pct_max": {
+      "value": 10,
+      "unit": "% LFL",
+      "citation": "NFPA 855-2023 9.6.5.6",
+      "edition": "NFPA 855-2023",
+      "summary": "Exhaust start and low alarm at or below this fraction of the vent-gas LFL. Subsection is to be verified.",
+      "tags": ["ASSUMED", "NEEDS PE REVIEW"]
+    },
+    "design_lfl_pct_limit": {
+      "value": 25,
+      "unit": "% LFL",
+      "citation": "NFPA 855-2023 9.6.5.6",
+      "edition": "NFPA 855-2023",
+      "summary": "Design concentration of the vent-gas mixture. FP lead says 25 percent; FA lead says below 25 percent.",
+      "tags": ["ASSUMED", "NEEDS PE REVIEW"]
+    },
+    "h2_max_inches_from_ceiling": {
+      "value": 12,
+      "unit": "in",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "summary": "Default hydrogen sensor location is within this distance of the ceiling. Not a fixed code height.",
+      "tags": ["ASSUMED"]
+    },
+    "facp_standby_hours": {
+      "value": 24,
+      "unit": "h",
+      "citation": "NFPA 72-2022 10.6.7.2",
+      "edition": "NFPA 72-2022",
+      "summary": "FACP standby duration used by the battery worksheet.",
+      "tags": ["ASSUMED", "CODE"]
+    },
+    "facp_alarm_minutes": {
+      "value": 5,
+      "unit": "min",
+      "citation": "NFPA 72-2022 10.6.7.2",
+      "edition": "NFPA 72-2022",
+      "summary": "FACP alarm duration when the system is not a voice system.",
+      "tags": ["ASSUMED", "CODE"]
+    },
+    "facp_voice_alarm_minutes": {
+      "value": 15,
+      "unit": "min",
+      "citation": "NFPA 72-2022 10.6.7.2",
+      "edition": "NFPA 72-2022",
+      "summary": "FACP alarm duration when voice evacuation is indicated.",
+      "tags": ["ASSUMED", "CODE"]
+    },
+    "gas_standby_hours": {
+      "value": 24,
+      "unit": "h",
+      "citation": "IFC 2024 1207.6.1.2",
+      "edition": "IFC 2024",
+      "summary": "Gas panel standby duration. FA lead says verify this against NFPA 855 and IFC 1207.6.1.2.",
+      "tags": ["ASSUMED", "NEEDS PE REVIEW"]
+    },
+    "gas_alarm_hours": {
+      "value": 2,
+      "unit": "h",
+      "citation": "IFC 2024 1207.6.1.2",
+      "edition": "IFC 2024",
+      "summary": "Gas panel alarm duration for sensors and horns. Subsection is to be verified.",
+      "tags": ["ASSUMED", "NEEDS PE REVIEW"]
+    },
+    "battery_margin_fraction": {
+      "value": 0.2,
+      "unit": "fraction",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "summary": "Minimum spare capacity applied on top of the calculated ampere-hours.",
+      "tags": ["ASSUMED"]
+    },
+    "default_aging_derate": {
+      "value": 1.25,
+      "unit": "multiplier",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "summary": "Default aging multiplier. The lead requires a derate and leaves the factor to the engineer.",
+      "tags": ["ASSUMED"]
+    },
+    "default_temp_derate": {
+      "value": 1.1,
+      "unit": "multiplier",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "summary": "Default temperature multiplier. The lead requires a derate and leaves the factor to the engineer.",
+      "tags": ["ASSUMED"]
+    },
+    "exhaust_standby_hours": {
+      "value": 2,
+      "unit": "h",
+      "citation": "IFC 2024 1207.6.1.2",
+      "edition": "IFC 2024",
+      "summary": "Standby power duration checked for the gas exhaust fan. Subsection is to be verified.",
+      "tags": ["ASSUMED", "NEEDS PE REVIEW"]
+    },
+    "molar_volume_ft3": {
+      "value": 0.853,
+      "unit": "ft3/mol",
+      "citation": "Ideal-gas helper at 70 F and 1 atm",
+      "edition": "WorkBench",
+      "summary": "Molar volume used by the release-mass helper. It is not a code value.",
+      "tags": ["ASSUMED"]
+    },
+    "standard_battery_ah": {
+      "value": [7, 12, 18, 26, 33, 40, 55, 75, 100, 150, 200],
+      "unit": "Ah",
+      "citation": "WorkBench catalog",
+      "edition": "WorkBench",
+      "summary": "Standard battery sizes. The worksheet selects the next size at or above the required ampere-hours.",
+      "tags": ["ASSUMED"]
+    },
+    "default_gases": {
+      "value": ["H2", "DMC"],
+      "unit": "",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "summary": "Gas list used until a UL 9540A report names the species.",
+      "tags": ["ASSUMED"]
+    },
+    "gas_properties": {
+      "value": {
+        "H2": {"mw": 2.016, "lfl_vol_pct": 4.0},
+        "DMC": {"mw": 90.08, "lfl_vol_pct": 4.22}
+      },
+      "unit": "",
+      "citation": "Physical-property defaults; confirm against the SDS and UL 9540A",
+      "edition": "WorkBench",
+      "summary": "Molecular weight and LFL defaults for the release helper when the user does not type them.",
+      "tags": ["ASSUMED"]
+    }
+  },
+  "rules": [
+    {
+      "id": "SCOPE-US",
+      "screen": "project",
+      "title": "United States only",
+      "summary": "This workbench blocks a project that is not in the United States.",
+      "citation": "BESS WorkBench scope",
+      "edition": "WorkBench",
+      "tags": [],
+      "lead": "SCOPE",
+      "lead_note": "US only. Non-US code bases are out of scope."
+    },
+    {
+      "id": "CODE-EDITION",
+      "screen": "project",
+      "title": "Recorded code editions",
+      "summary": "Warn when a project edition or ruleset version drifts from the rules file the engine is using.",
+      "citation": "Project code basis",
+      "edition": "WorkBench",
+      "tags": [],
+      "lead": "SCOPE",
+      "lead_note": "Defaults are IFC/IBC/IMC 2024, NEC 2023, NFPA 855-2023, 72-2022, 13-2025, and 69-2024."
+    },
+    {
+      "id": "FP-THRESH-20",
+      "screen": "thresholds",
+      "title": "Lithium-ion room threshold",
+      "summary": "A room at or above the lithium-ion threshold is in scope for the ESS room rules.",
+      "citation": "IFC 2024 Table 1207.1.1",
+      "edition": "IFC 2024",
+      "tags": ["CODE"],
+      "lead": "FP",
+      "lead_note": "20 kWh per room."
+    },
+    {
+      "id": "FP-FA-600",
+      "screen": "thresholds",
+      "title": "Energy per fire area",
+      "summary": "Lithium-ion energy above the fire-area cap fails, and energy within five percent of the cap warns.",
+      "citation": "IFC 2024 Table 1207.5",
+      "edition": "IFC 2024",
+      "tags": ["ASSUMED"],
+      "lead": "FP",
+      "lead_note": "T1207.5 marked unconfirmed by the FP lead."
+    },
+    {
+      "id": "FP-FA-SEP",
+      "screen": "thresholds",
+      "title": "Two-hour rooms combine; three-hour barriers separate",
+      "summary": "Rooms in a two-hour enclosure are one fire area. A separate fire area needs a three-hour barrier and a three-hour floor and ceiling.",
+      "citation": "IBC 2024 Table 707.3.10",
+      "edition": "IBC 2024",
+      "tags": ["ASSUMED"],
+      "lead": "FP",
+      "lead_note": "F-1 is assumed for the fire-area separation table and is editable. Horizontal separation cites IBC 711.2.4.2."
+    },
+    {
+      "id": "FP-ROOM-2H",
+      "screen": "rooms",
+      "title": "Two-hour room enclosure",
+      "summary": "An in-scope BESS room enclosure is at least two hours.",
+      "citation": "IFC 2024 1207.7.4",
+      "edition": "IFC 2024",
+      "tags": ["CODE"],
+      "lead": "FP",
+      "lead_note": ""
+    },
+    {
+      "id": "FP-UL9540",
+      "screen": "rooms",
+      "title": "UL 9540 listing",
+      "summary": "In-scope ESS groups are recorded as listed to UL 9540. Confirm the listing section in the adopted IFC.",
+      "citation": "IFC 2024 1207.3.1",
+      "edition": "IFC 2024",
+      "tags": ["CODE"],
+      "lead": "FP",
+      "lead_note": "Confirm the section number in the adopted edition before issuing."
+    },
+    {
+      "id": "FP-SPACING",
+      "screen": "rooms",
+      "title": "Array spacing record",
+      "summary": "Spacing is stored on the group. This ruleset does not apply a numeric spacing limit.",
+      "citation": "Project record",
+      "edition": "WorkBench",
+      "tags": [],
+      "lead": "FP",
+      "lead_note": "The leads did not give a spacing number. Do not invent one in the rules file."
+    },
+    {
+      "id": "FP-CHEM-OTHER",
+      "screen": "rooms",
+      "title": "Chemistry outside the lithium-ion row",
+      "summary": "A chemistry other than lithium-ion is flagged so a PE can pick the right threshold row.",
+      "citation": "IFC 2024 Table 1207.1.1",
+      "edition": "IFC 2024",
+      "tags": [],
+      "lead": "FP",
+      "lead_note": "Only the lithium-ion row is encoded."
+    },
+    {
+      "id": "FA-SMOKE",
+      "screen": "rooms",
+      "title": "Smoke detection in each BESS room",
+      "summary": "Each in-scope BESS room is recorded as having smoke detection.",
+      "citation": "IFC 2024 1207.5.4",
+      "edition": "IFC 2024",
+      "tags": ["ASSUMED", "CODE"],
+      "lead": "FA",
+      "lead_note": "FA item 9. FA items are assumed unless a PE confirms them."
+    },
+    {
+      "id": "FP-SPR-TYPE",
+      "screen": "sprinklers",
+      "title": "Sprinkler system type",
+      "summary": "Only wet, dry, and double-interlock preaction systems are in scope.",
+      "citation": "BESS WorkBench scope",
+      "edition": "WorkBench",
+      "tags": [],
+      "lead": "FP",
+      "lead_note": "Clean agent, foam, water mist, and single-interlock are not available."
+    },
+    {
+      "id": "FP-SPR-DESIGN",
+      "screen": "sprinklers",
+      "title": "Density times design area",
+      "summary": "Sprinkler demand is density times the lesser of the room area and the area cap. Density below the baseline needs a UL 9540A report.",
+      "citation": "IFC 2024 1207.5.5",
+      "edition": "IFC 2024",
+      "tags": ["CODE"],
+      "lead": "FP",
+      "lead_note": ""
+    },
+    {
+      "id": "FP-SPR-30",
+      "screen": "sprinklers",
+      "title": "Dry and double-interlock area increase",
+      "summary": "Dry and double-interlock preaction design areas increase by the ruleset factor, and the added area is shown.",
+      "citation": "NFPA 13-2025 19.2.3.2.5",
+      "edition": "NFPA 13-2025",
+      "tags": ["ASSUMED"],
+      "lead": "FP",
+      "lead_note": "Subsection marked unconfirmed by the FP lead."
+    },
+    {
+      "id": "FP-SPR-9540A",
+      "screen": "sprinklers",
+      "title": "Sprinkler sign-off blocked without UL 9540A",
+      "summary": "Sign-off is blocked when a group above the cutoff has no UL 9540A report. The density math is still shown.",
+      "citation": "BESS WorkBench scope rule",
+      "edition": "WorkBench",
+      "tags": ["ASSUMED"],
+      "lead": "FP",
+      "lead_note": "FP lead: do not lower density without a 9540A report. The 50 kWh cutoff is a workbench gate."
+    },
+    {
+      "id": "FP-SPR-C100",
+      "screen": "sprinklers",
+      "title": "Hazen-Williams C",
+      "summary": "C is fixed at the ruleset value and is recorded only. There is no pipe-friction model.",
+      "citation": "FP lead 2026-10-21",
+      "edition": "NFPA 13-2025",
+      "tags": ["ASSUMED"],
+      "lead": "FP",
+      "lead_note": "C=100 fixed."
+    },
+    {
+      "id": "FP-SPR-HOSE",
+      "screen": "sprinklers",
+      "title": "Hose allowance",
+      "summary": "Hose flow and duration are project inputs that start from the assumed lead defaults.",
+      "citation": "FP lead 2026-10-21",
+      "edition": "FP lead 2026-10-21",
+      "tags": ["ASSUMED"],
+      "lead": "FP",
+      "lead_note": "100 gpm and 60 min, editable."
+    },
+    {
+      "id": "FP-SPR-DUCT",
+      "screen": "sprinklers",
+      "title": "Duct sprinkler flow",
+      "summary": "Duct sprinkler flow is K times the square root of pressure, and pressure under the minimum fails.",
+      "citation": "NFPA 13-2025 minimum sprinkler pressure",
+      "edition": "NFPA 13-2025",
+      "tags": ["ASSUMED"],
+      "lead": "FP",
+      "lead_note": "q = K * sqrt(p), 7 psi minimum."
+    },
+    {
+      "id": "FP-9540A-RFI",
+      "screen": "sprinklers",
+      "title": "UL 9540A report missing",
+      "summary": "A missing UL 9540A report is an automatic open item for every group that has energy.",
+      "citation": "FP lead 2026-10-21",
+      "edition": "FP lead 2026-10-21",
+      "tags": [],
+      "lead": "FP",
+      "lead_note": "Auto RFI."
+    },
+    {
+      "id": "FP-IMC-FSD",
+      "screen": "explosion",
+      "title": "No fire or smoke damper on gas exhaust",
+      "summary": "The gas exhaust duct does not get a fire damper or a smoke damper.",
+      "citation": "IMC 2024 509.6.1",
+      "edition": "IMC 2024",
+      "tags": ["CODE"],
+      "lead": "FP",
+      "lead_note": ""
+    },
+    {
+      "id": "FP-IMC-BAL",
+      "screen": "explosion",
+      "title": "No balancing damper on gas exhaust",
+      "summary": "The gas exhaust duct does not get a balancing damper.",
+      "citation": "IMC 2024 509.5.1",
+      "edition": "IMC 2024",
+      "tags": ["CODE"],
+      "lead": "FP",
+      "lead_note": ""
+    },
+    {
+      "id": "FP-IMC-BD",
+      "screen": "explosion",
+      "title": "No backdraft damper on gas exhaust",
+      "summary": "Avoid a backdraft damper on the gas exhaust.",
+      "citation": "IMC 2024 509",
+      "edition": "IMC 2024",
+      "tags": ["CODE"],
+      "lead": "FP",
+      "lead_note": "FP lead: avoid backdraft dampers."
+    },
+    {
+      "id": "FP-IMC-SHAFT",
+      "screen": "explosion",
+      "title": "Rated shaft for the gas exhaust",
+      "summary": "A duct that crosses a rated assembly uses a rated shaft, unless it terminates directly at an exterior wall or roof.",
+      "citation": "IMC 2024 509.6.1.1",
+      "edition": "IMC 2024",
+      "tags": ["CODE"],
+      "lead": "FP",
+      "lead_note": ""
+    },
+    {
+      "id": "FP-IMC-MOTOR",
+      "screen": "explosion",
+      "title": "Motorized damper fail-open and proven open",
+      "summary": "A motorized exhaust damper fails open and proves open to the FACP.",
+      "citation": "FP lead 2026-10-21",
+      "edition": "FP lead 2026-10-21",
+      "tags": ["CODE"],
+      "lead": "FP",
+      "lead_note": "Fail-open plus proven-open to the FACP."
+    },
+    {
+      "id": "FP-IMC-OTHER",
+      "screen": "explosion",
+      "title": "Dampers in other ducts through BESS walls",
+      "summary": "Other ducts through a BESS wall use a three-hour damper in a three-hour wall and a 1.5-hour damper in a wall under three hours.",
+      "citation": "IBC 2024 Table 717.3.2.1",
+      "edition": "IBC 2024",
+      "tags": ["CODE"],
+      "lead": "FP",
+      "lead_note": ""
+    },
+    {
+      "id": "FA-IMC-509",
+      "screen": "explosion",
+      "title": "Gas exhaust duct constraints",
+      "summary": "FA lead item 10 is the same gas-exhaust duct constraint set evaluated by the IMC line items.",
+      "citation": "IMC 2024 509",
+      "edition": "IMC 2024",
+      "tags": ["ASSUMED"],
+      "lead": "FA",
+      "lead_note": "FA item 10. No fire, smoke, backdraft, or balancing damper, and a rated shaft where the duct crosses a rated assembly."
+    },
+    {
+      "id": "FP-EXH-LOGIC",
+      "screen": "explosion",
+      "title": "Low alarm starts exhaust and makeup",
+      "summary": "A low alarm from either gas starts exhaust and makeup air, latched, with manual reset.",
+      "citation": "FP lead 2026-10-21",
+      "edition": "FP lead 2026-10-21",
+      "tags": ["CODE"],
+      "lead": "FP",
+      "lead_note": "H2 or DMC. Latched. Manual reset."
+    },
+    {
+      "id": "FA-NO-SHUTDOWN",
+      "screen": "explosion",
+      "title": "Fire alarm does not stop gas exhaust",
+      "summary": "An HVAC shutdown sequence that includes the gas exhaust fails.",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "tags": ["ASSUMED"],
+      "lead": "FA",
+      "lead_note": "FA item 8."
+    },
+    {
+      "id": "FA-EXH-STANDBY",
+      "screen": "explosion",
+      "title": "Exhaust fan standby power",
+      "summary": "The gas exhaust fan is on standby power for the ruleset duration. Verify the subsection before relying on it.",
+      "citation": "IFC 2024 1207.6.1.2",
+      "edition": "IFC 2024",
+      "tags": ["ASSUMED", "NEEDS PE REVIEW"],
+      "lead": "FA",
+      "lead_note": "FA item 12. VERIFY NFPA 855 and IFC 1207.6.1.2."
+    },
+    {
+      "id": "FP-LFL-10",
+      "screen": "explosion",
+      "title": "Low-alarm setpoint",
+      "summary": "The low alarm and exhaust start are at or below 10 percent of the vent-gas LFL. The subsection needs PE review.",
+      "citation": "NFPA 855-2023 9.6.5.6",
+      "edition": "NFPA 855-2023",
+      "tags": ["CODE", "ASSUMED", "NEEDS PE REVIEW"],
+      "lead": "BOTH",
+      "lead_note": "FA item 2 is marked NEEDS PE REVIEW and the subsection is to be verified. FP lead states alarm at 10 percent LFL."
+    },
+    {
+      "id": "FP-LFL-25",
+      "screen": "explosion",
+      "title": "Design LFL fraction",
+      "summary": "A design fraction above 25 percent fails. Exactly 25 percent warns because the FA lead requires a value below 25 percent.",
+      "citation": "NFPA 855-2023 9.6.5.6",
+      "edition": "NFPA 855-2023",
+      "tags": ["ASSUMED", "NEEDS PE REVIEW"],
+      "lead": "BOTH",
+      "lead_note": "FP lead says design at 25 percent and marked 9.6.5.6 unconfirmed. FA lead says design below 25 percent."
+    },
+    {
+      "id": "GAS-MB",
+      "screen": "explosion",
+      "title": "Release mass-balance helper",
+      "summary": "Ideal-gas release helper from user-entered UL 9540A masses. It does not replace a PE dispersion analysis.",
+      "citation": "Ideal-gas helper at 70 F and 1 atm",
+      "edition": "WorkBench",
+      "tags": ["ASSUMED"],
+      "lead": "FP",
+      "lead_note": "Helper only. Mixture LFL uses Le Chatelier on the combustible fraction."
+    },
+    {
+      "id": "FA-SETPOINT-CONV",
+      "screen": "explosion",
+      "title": "Setpoint conversion",
+      "summary": "Converting a release case or a single-gas percent LEL into a mixture percent LFL needs PE review.",
+      "citation": "NFPA 855-2023 9.6.5.6",
+      "edition": "NFPA 855-2023",
+      "tags": ["ASSUMED", "NEEDS PE REVIEW"],
+      "lead": "FA",
+      "lead_note": "FA header: setpoint conversion NEEDS PE REVIEW."
+    },
+    {
+      "id": "FP-SENSOR-COVER",
+      "screen": "gas",
+      "title": "One sensor per listed gas per room",
+      "summary": "Each room has at least one sensor for every gas on the detection list.",
+      "citation": "IFC 2024 916.3",
+      "edition": "IFC 2024",
+      "tags": ["CODE"],
+      "lead": "FA",
+      "lead_note": "FA item 1. The default list is hydrogen and DMC until UL 9540A names the gases."
+    },
+    {
+      "id": "FP-LFL-SINGLE",
+      "screen": "gas",
+      "title": "Single-gas percent LEL",
+      "summary": "A single-gas percent LEL setpoint without UL 9540A mixture data is an open item.",
+      "citation": "NFPA 855-2023 9.6.5.6",
+      "edition": "NFPA 855-2023",
+      "tags": ["ASSUMED", "NEEDS PE REVIEW"],
+      "lead": "BOTH",
+      "lead_note": "FA item 2 flags vendor single-gas percent LEL setpoints. FP lead: single-gas percent LEL is not enough without 9540A gas data."
+    },
+    {
+      "id": "FA-HARD-MON",
+      "screen": "gas",
+      "title": "Monitoring-only or BACnet-only gas detection",
+      "summary": "Gas detection that is monitoring-only or BACnet-only fails hard when it is the explosion control. Life safety is hardwired.",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "tags": ["ASSUMED"],
+      "lead": "FA",
+      "lead_note": "FA item 4."
+    },
+    {
+      "id": "FA-HARD-NAC",
+      "screen": "gas",
+      "title": "Gas horns are not on fire-alarm NACs",
+      "summary": "Gas horns on fire-alarm notification appliance circuits fail hard.",
+      "citation": "IFC 2024 916.8",
+      "edition": "IFC 2024",
+      "tags": ["ASSUMED", "CODE"],
+      "lead": "FA",
+      "lead_note": "FA item 5."
+    },
+    {
+      "id": "FA-DISTINCT",
+      "screen": "gas",
+      "title": "Gas notification distinct from fire alarm",
+      "summary": "Gas notification is distinct from the fire alarm.",
+      "citation": "IFC 2024 916.8",
+      "edition": "IFC 2024",
+      "tags": ["ASSUMED", "CODE"],
+      "lead": "FA",
+      "lead_note": "FA item 5."
+    },
+    {
+      "id": "FA-RELAYS",
+      "screen": "gas",
+      "title": "Relay map R1, R2, R3, and fault",
+      "summary": "Low alarm drives exhaust and makeup on R1 and a gas alarm to the FACP on R2. High alarm drives horns on R3. The fault relay is trouble to the FACP.",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "tags": ["ASSUMED"],
+      "lead": "FA",
+      "lead_note": "FA item 3."
+    },
+    {
+      "id": "FA-H2-CEILING",
+      "screen": "gas",
+      "title": "Hydrogen sensor near the ceiling",
+      "summary": "Hydrogen sensors are high and within 12 inches of the ceiling unless a PE accepts another spot.",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "tags": ["ASSUMED"],
+      "lead": "FA",
+      "lead_note": "FA item 6. No fixed height rule; this is the default location."
+    },
+    {
+      "id": "FA-DMC-LOW",
+      "screen": "gas",
+      "title": "DMC sensor low",
+      "summary": "DMC sensors are mounted low. There is no fixed dimension in the lead rules.",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "tags": ["ASSUMED"],
+      "lead": "FA",
+      "lead_note": "FA item 6."
+    },
+    {
+      "id": "FA-HEIGHT-OPEN",
+      "screen": "gas",
+      "title": "Sensor height still an open item",
+      "summary": "Each sensor height stays open until the vendor justifies it from UL 9540A data and airflow with exhaust on and exhaust failed.",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "tags": ["ASSUMED"],
+      "lead": "FA",
+      "lead_note": "FA item 6."
+    },
+    {
+      "id": "FA-PROOFS",
+      "screen": "gas",
+      "title": "Proof points and input shortfall",
+      "summary": "Fan, makeup, and damper-open proofs are supervisory. Points that do not fit on the gas panel move to FACP monitor modules.",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "tags": ["ASSUMED"],
+      "lead": "FA",
+      "lead_note": "FA item 7. Loss of proof is supervisory."
+    },
+    {
+      "id": "FA-SUPERVISING",
+      "screen": "gas",
+      "title": "Signals to the supervising station",
+      "summary": "Gas alarm, trouble, and supervisory signals are indicated to the supervising station.",
+      "citation": "NFPA 72-2022 supervising station",
+      "edition": "NFPA 72-2022",
+      "tags": ["ASSUMED"],
+      "lead": "FA",
+      "lead_note": "FA item 9. Confirm the transmission section in the adopted NFPA 72."
+    },
+    {
+      "id": "FP-LAND-RFI",
+      "screen": "gas",
+      "title": "Relay landings not shown",
+      "summary": "Missing relay landings on the controls drawings are an automatic open item.",
+      "citation": "FP lead 2026-10-21",
+      "edition": "FP lead 2026-10-21",
+      "tags": [],
+      "lead": "FP",
+      "lead_note": "Auto RFI."
+    },
+    {
+      "id": "FP-HIGH-RFI",
+      "screen": "gas",
+      "title": "High-gas signal to the FACP",
+      "summary": "No high-gas signal to the FACP is an automatic open item.",
+      "citation": "FP lead 2026-10-21",
+      "edition": "FP lead 2026-10-21",
+      "tags": [],
+      "lead": "FP",
+      "lead_note": "Auto RFI. Local horns on R3 are not a substitute for the FACP signal."
+    },
+    {
+      "id": "CE-STOP",
+      "screen": "cause_effect",
+      "title": "Cause and effect does not stop exhaust",
+      "summary": "Any matrix mark that stops the gas exhaust fails.",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "tags": ["ASSUMED"],
+      "lead": "FA",
+      "lead_note": "FA item 8, applied to the matrix."
+    },
+    {
+      "id": "CE-SOURCE",
+      "screen": "cause_effect",
+      "title": "Cause and effect source",
+      "summary": "The matrix is generated from the lead sequence until someone edits it. An edit that drifts from the room list warns.",
+      "citation": "BESS WorkBench",
+      "edition": "WorkBench",
+      "tags": [],
+      "lead": "FA",
+      "lead_note": ""
+    },
+    {
+      "id": "FA-BATT-FACP",
+      "screen": "battery",
+      "title": "FACP battery duration",
+      "summary": "FACP battery worksheet uses 24 hours of standby plus 5 minutes of alarm, or 15 minutes when voice is indicated.",
+      "citation": "NFPA 72-2022 10.6.7.2",
+      "edition": "NFPA 72-2022",
+      "tags": ["ASSUMED", "CODE"],
+      "lead": "FA",
+      "lead_note": "FA item 11."
+    },
+    {
+      "id": "FA-BATT-GAS",
+      "screen": "battery",
+      "title": "Gas panel battery duration",
+      "summary": "Gas panel, sensors, and horns use 24 hours of standby plus 2 hours of alarm. Verify the subsection.",
+      "citation": "IFC 2024 1207.6.1.2",
+      "edition": "IFC 2024",
+      "tags": ["ASSUMED", "NEEDS PE REVIEW"],
+      "lead": "FA",
+      "lead_note": "FA item 12. VERIFY NFPA 855 and IFC 1207.6.1.2."
+    },
+    {
+      "id": "FA-BATT-MARGIN",
+      "screen": "battery",
+      "title": "Battery margin and derate",
+      "summary": "The worksheet applies at least 20 percent spare capacity plus aging and temperature derates, then picks the next standard size.",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "tags": ["ASSUMED"],
+      "lead": "FA",
+      "lead_note": "FA item 13. Derate factors are engineer inputs and default above 1."
+    },
+    {
+      "id": "FA-DOOR",
+      "screen": "rfi",
+      "title": "Door hardware follows the barrier",
+      "summary": "Two-hour versus three-hour barriers drive door hardware, and hold-open devices release on fire alarm. This stays an open coordination item until it is closed.",
+      "citation": "FA lead 2026-10-21",
+      "edition": "FA lead 2026-10-21",
+      "tags": ["ASSUMED"],
+      "lead": "FA",
+      "lead_note": "FA item 14."
+    }
+  ]
+}

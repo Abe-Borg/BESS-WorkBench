@@ -1,0 +1,72 @@
+name: Windows build
+
+on:
+  push:
+    branches: [main, "cursor/**"]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest
+
+      - name: Build BESS-WorkBench.exe
+        run: python -m PyInstaller packaging/bess_workbench.spec --noconfirm
+
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build BESS-WorkBench-Setup.exe
+        shell: pwsh
+        run: |
+          $iscc = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) { throw "ISCC.exe was not found after installing Inno Setup." }
+          & $iscc packaging\installer.iss
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BESS-WorkBench.exe
+          path: dist/BESS-WorkBench.exe
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BESS-WorkBench-Setup.exe
+          path: dist/BESS-WorkBench-Setup.exe
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test-and-build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-files
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-files/BESS-WorkBench.exe/BESS-WorkBench.exe
+            release-files/BESS-WorkBench-Setup.exe/BESS-WorkBench-Setup.exe
