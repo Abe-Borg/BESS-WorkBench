@@ -262,18 +262,21 @@ class MainWindow(QMainWindow):
         if not path.is_file():
             QMessageBox.warning(self, "Sample", f"Sample file was not found at {path}")
             return
-        # Unsaved copy: autosave must not write to the bundled file (a temp extraction in the one-file build).
-        self.load_path(path, as_copy=True)
+        self.load_path(path)
 
-    def load_path(self, path: Path, as_copy: bool = False) -> None:
+    def load_path(self, path: Path) -> None:
         try:
             project = load_project(path)
         except Exception as exc:
             QMessageBox.warning(self, "Open project", scrub(str(exc)))
             return
         self.controller = ProjectController(project, self.controller.rules)
+        # The bundled sample opens as an unsaved copy from any route (menu, Recent, Open, command line), so autosave
+        # never writes to it (in the one-file build it is a temp extraction).
+        as_copy = _is_bundled_sample(path)
         if as_copy:
             self.path = None
+            self._forget(path)
         else:
             self.path = path
             self._remember(path)
@@ -328,6 +331,11 @@ class MainWindow(QMainWindow):
         self.settings.setValue("recent", recent[:8])
         self._rebuild_recent()
 
+    def _forget(self, path: Path) -> None:
+        recent = [item for item in list(self.settings.value("recent", []) or []) if item != str(path)]
+        self.settings.setValue("recent", recent)
+        self._rebuild_recent()
+
     def _rebuild_recent(self) -> None:
         self.recent_menu.clear()
         recent = list(self.settings.value("recent", []) or [])
@@ -357,6 +365,13 @@ class MainWindow(QMainWindow):
         if self.autosave_enabled:
             self._autosave()
         event.accept()
+
+
+def _is_bundled_sample(path: Path) -> bool:
+    try:
+        return path.samefile(sample_file())
+    except OSError:
+        return False
 
 
 def run(args=None) -> int:

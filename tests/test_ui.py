@@ -60,6 +60,19 @@ def test_open_sample_is_an_unsaved_copy(qapp, tmp_path):
     window.close()
 
 
+def test_stale_recent_sample_entry_opens_as_copy(qapp, tmp_path):
+    settings = QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)
+    other = tmp_path / "mine.bessproj"
+    settings.setValue("recent", [str(sample_file()), str(other)])
+    window = MainWindow(autosave=False, settings=settings)
+    action = next(item for item in window.recent_menu.actions() if item.text() == str(sample_file()))
+    action.trigger()
+    assert window.controller.project.meta.synthetic
+    assert window.path is None
+    assert list(settings.value("recent", []) or []) == [str(other)]
+    window.close()
+
+
 def test_added_rooms_get_unique_ids_after_a_delete(qapp, tmp_path):
     rules = load_rules()
     controller = ProjectController(build_new_project(rules), rules)

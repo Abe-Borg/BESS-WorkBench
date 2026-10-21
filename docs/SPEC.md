@@ -125,7 +125,7 @@ Left navigation, status badge, and a results panel on the right. The AI assistan
 10. Reports. DOCX basis of design, XLSX workbook, summary PDF.
 11. Settings. API key, model, test connection. Not a rules screen. Badge is ON or OFF.
 
-File menu: New, Open, Save, Save As, Open sample, Document intake, recent files. Autosave writes the open file, or a recovery copy under the app data directory when the project has no name yet. Open sample loads the bundled file as an unsaved copy, so autosave never writes to it. View menu switches light and dark. Help → About shows the version.
+File menu: New, Open, Save, Save As, Open sample, Document intake, recent files. Autosave writes the open file, or a recovery copy under the app data directory when the project has no name yet. The bundled sample always opens as an unsaved copy (Open sample, Recent, Open, or the command line) and is dropped from Recent, so autosave never writes to it. View menu switches light and dark. Help → About shows the version.
 
 Reports request Arial. On Windows, the PDF uses Arial when `C:\Windows\Fonts\arial.ttf` is present. On a machine without Arial the PDF uses Liberation Sans or DejaVu and says so on the first page. The DOCX still names Arial so Word uses it.
 
